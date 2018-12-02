@@ -21,7 +21,7 @@ void BitMatrix::Recreate(int Cols, int Rows)
 	}
 }
 
-void BitMatrix::CopyObject(BitMatrix &matr)
+void BitMatrix::CopyObject(const BitMatrix &matr)
 {
 	Recreate(matr.columns, matr.rows);
 	for (int i = 0; i < matr.rows; i++)
@@ -45,6 +45,23 @@ int BitMatrix::Max(char ** str, int n)
 		}
 	}
 	return max;
+}
+
+BitMatrix BitMatrix::ForEach(BitMatrix & a, BitMatrix & b, bool(*operation)(bool, bool))
+{
+	if (a.columns != b.columns || a.rows != b.rows)
+	{
+		throw std::exception("Sizes isnt equal!");
+	}
+	BitMatrix result(a);
+	for (int i = 0; i < a.rows; i++)
+	{
+		for (int j = 0; j < a.columns; j++)
+		{
+			result[i][j] = operation(result[i][j], b[i][j]);
+		}
+	}
+	return result;
 }
 
 void BitMatrix::Print()
@@ -103,6 +120,100 @@ bool BitMatrix::operator==(BitMatrix & x)
 bool BitMatrix::operator!=(BitMatrix & x)
 {
 	return !(*this == x);
+}
+
+BitMatrix BitMatrix::operator&(BitMatrix & x)
+{
+	return ForEach(*this, x, BitArray::AND);
+}
+
+BitMatrix BitMatrix::operator&=(BitMatrix & x)
+{
+	CopyObject(*this & x);
+	return *this;
+}
+
+BitMatrix BitMatrix::operator|(BitMatrix & x)
+{
+	return ForEach(*this, x, BitArray::OR);
+}
+
+BitMatrix BitMatrix::operator|=(BitMatrix & x)
+{
+	CopyObject(*this | x);
+	return *this;
+}
+
+BitMatrix BitMatrix::operator^(BitMatrix & x)
+{
+	return ForEach(*this, x, BitArray::XOR);
+}
+
+BitMatrix BitMatrix::operator^=(BitMatrix & x)
+{
+	CopyObject(*this ^ x);
+	return *this;
+}
+
+BitMatrix BitMatrix::operator~()
+{
+	return ForEach(*this, *this, Inversion);
+}
+
+BitMatrix BitMatrix::ShiftRight(int index, int count)
+{
+	BitMatrix result(*this);
+	result[index] >>= count;
+	return result;
+}
+
+BitMatrix BitMatrix::ShiftLeft(int index, int count)
+{
+	BitMatrix result(*this);
+	result[index] <<= count;
+	return result;
+}
+
+BitArray BitMatrix::AndEach()
+{
+	if (rows <= 0 || columns <= 0)
+	{
+		throw std::exception("Wrong size!");
+	}
+	BitArray result(subArrays[0]);
+	for (int i = 1; i < rows; i++)
+	{
+		result &= subArrays[i];
+	}
+	return result;
+}
+
+BitArray BitMatrix::OrEach()
+{
+	if (rows <= 0 || columns <= 0)
+	{
+		throw std::exception("Wrong size!");
+	}
+	BitArray result(subArrays[0]);
+	for (int i = 1; i < rows; i++)
+	{
+		result |= subArrays[i];
+	}
+	return result;
+}
+
+BitArray BitMatrix::XorEach()
+{
+	if (rows <= 0 || columns <= 0)
+	{
+		throw std::exception("Wrong size!");
+	}
+	BitArray result(subArrays[0]);
+	for (int i = 1; i < rows; i++)
+	{
+		result ^= subArrays[i];
+	}
+	return result;
 }
 
 void BitMatrix::Set(int x, int y, bool value)
@@ -168,7 +279,7 @@ BitMatrix::BitMatrix(char **data, int dataCount)
 	Recreate(maxLen, dataCount);
 	for (int i = 0; i < dataCount; i++)
 	{
-		int len = strlen(data[i]);
+		/*int len = strlen(data[i]);
 		int deltaLen = maxLen - len;
 		for (int j = 0; j < deltaLen; j++)
 		{
@@ -177,11 +288,13 @@ BitMatrix::BitMatrix(char **data, int dataCount)
 		for (int k = 0; k < len; k++)
 		{
 			subArrays[i][k + deltaLen] = data[i][k] == '1';
-		}
+		}*/
+		BitArray a(data[i], maxLen);
+		subArrays[i] = a;
 	}
 }
 
-BitMatrix::BitMatrix(BitMatrix &matr)
+BitMatrix::BitMatrix(const BitMatrix &matr)
 {
 	CopyObject(matr);
 }
@@ -190,3 +303,12 @@ BitMatrix::~BitMatrix()
 {
 	delete[] subArrays;
 }
+
+/*
+
+[0]		[1][1]		[0][1][0]
+[0]	&	[1][1] =	[0][1][0]		ËÎÆÜ
+[1]					[1][0][0]
+
+*/
+
