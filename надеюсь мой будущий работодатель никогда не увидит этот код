@@ -1,0 +1,155 @@
+
+/*
+class BitArray
+{
+........
+protected:
+	void CopyObject(BitArray &source);
+........
+
+
+}
+
+void BitArray::CopyObject(BitArray & source)
+{
+	bytes = new UC[source.segmentsCount];
+	bitsCount = source.bitsCount;
+	segmentsCount = source.segmentsCount;
+	for (int i = 0; i < bitsCount; i++)
+	{
+		SetValue(i, source.GetValue(i));
+	}
+}
+
+*/
+
+//Sets.cpp
+
+
+#include "Sets.h"
+
+Sets & Sets::operator+(Sets & b)
+{
+	Sets c;
+	for (int i = 0; i < 256; i++)
+	{
+		c.SetValue(i,operator[](i) | b[i]);
+	}
+	c.power = c.GetWeight();
+	return c;
+}
+
+Sets & Sets::operator*(Sets & b)
+{
+	Sets c;
+	for (int i = 0; i < 256; i++)
+	{
+		c.SetValue(i, operator[](i) & b[i]);
+	}
+	c.power = c.GetWeight();
+	return c;
+}
+
+Sets & Sets::operator-(Sets & b)
+{
+	Sets c;
+	for (int i = 0; i < 256; i++)
+	{
+		c.SetValue(i, operator[](i) ^ b[i]);
+	}
+	c.power = c.GetWeight();
+	return c;
+}
+
+Sets & Sets::operator~()
+{
+	Sets c;
+	for (int i = 0; i < 256; i++)
+	{
+		c.SetValue(i, !operator[](i));
+	}
+	c.power = c.GetWeight();
+	return c;
+}
+
+Sets & Sets::operator+(char s)
+{
+	Sets *a = new Sets(*this);
+	a->SetValue(s, true);
+	return *a;
+}
+
+Sets & Sets::operator-(char s)
+{
+	Sets *a = new Sets(*this);
+	a->SetValue(s, false);
+	return *a;
+}
+
+inline Sets::Sets() :BitArray(256)
+{
+	power = 0;
+}
+
+Sets::Sets(Sets & x)
+{
+	CopyObject(x);
+	power = x.power;
+}
+
+Sets::Sets(const char *s) :BitArray(256)
+{
+	for (int i = 0; i < 256; i++)
+	{
+		SetValue(s[i], false);
+	}
+	for (int i = 0; i < strlen(s); i++)
+	{
+		SetValue(s[i], true);
+	}
+	power = GetWeight();
+}
+
+Sets::~Sets()
+{
+}
+
+
+//Sets.h
+
+#pragma once
+#include "BitArray.h"
+
+class Sets: BitArray
+{
+private:
+	int power;
+public:
+	Sets &operator +(Sets& b);
+	Sets &operator *(Sets& b);
+	Sets &operator -(Sets& b);
+	Sets &operator ~();
+	Sets &operator+(char s);
+	Sets &operator-(char s);
+	Sets();
+	Sets(Sets& x);
+	Sets(const char *s);
+	friend std::ostream& operator<<(std::ostream& stream, Sets& x) {
+		stream <<"Power is: "<< x.power << "\nvalue: ";
+		BitArray b = &(BitArray)x;
+		stream << b;
+		return stream;
+	}
+
+	friend std::istream& operator>>(std::istream& stream, Sets& x) {
+		std::string buffer;
+		stream >> buffer;
+		BitArray a(buffer.c_str());
+		x.CopyObject(a);
+		x.power = x.GetWeight();
+		return stream;
+	}
+
+	~Sets();
+};
+
