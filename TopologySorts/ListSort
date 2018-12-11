@@ -1,0 +1,203 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <stack>
+
+struct Leader;
+struct Trailer;
+
+struct Trailer
+{
+	Leader *ld;
+	Trailer *nx;
+};
+
+struct Leader
+{
+	int key;
+	int count;
+	Leader *nx;
+	Trailer *tr;
+};
+
+struct Pair
+{
+	int a;
+	int b;
+};
+
+std::vector<std::string> ReadAllstrings(std::string path)
+{
+	std::fstream reader(path);
+	std::vector<std::string> allStrings;
+	if (reader.is_open())
+	{
+		std::string nextString;
+		while (!reader.eof())
+		{
+			std::getline(reader, nextString);
+			allStrings.push_back(nextString);
+			nextString.clear();
+		}
+	}
+	else
+	{
+		allStrings.push_back("WRONG FILE PATH: " + path);
+		std::cout << "Wrong path!";
+	}
+	return allStrings;
+}
+
+std::vector<std::string> SplitString(const std::string &str, char separator)
+{
+	std::vector<std::string> words;
+	std::string word;
+	for (auto ch : str)
+	{
+		if (ch == separator)
+		{
+			words.push_back(word);
+			word.clear();
+		}
+		else
+		{
+			word.push_back(ch);
+		}
+	}
+	if (word.length() > 0)
+	{
+		words.push_back(word);
+	}
+	return words;
+}
+
+std::vector<Pair> SplitStringsByPairs(const std::vector<std::string> &text)
+{
+	std::vector<Pair> pairs;
+	Pair pair;
+	for (auto str : text)
+	{
+		auto words = SplitString(str, ' ');
+		pair.a = std::stoi(words[0]);
+		pair.b = std::stoi(words[1]);
+		pairs.push_back(pair);
+	}
+	return pairs;
+}
+
+void PrintGraph(Leader *LD)
+{
+	for (Leader* ld = LD; ld; ld = ld->nx)
+	{
+		std::cout << "Key: " << ld->key << '\n';
+		std::cout << "Count: " << ld->count << '\n';
+		std::cout << "Edges:\n";
+		for (Trailer *t = ld->tr; t; t = t->nx)
+		{
+			std::cout << t->ld->key << '\n';
+		}
+		std::cout << '\n';
+	}
+}
+
+void PrintSortedGraph(Leader *LD)
+{
+	for (Leader* ld = LD; ld; ld = ld->nx)
+	{
+		std::cout << ld->key << ' ';
+	}
+	std::cout << '\n';
+}
+
+int main()
+{
+	std::string path("C:\\Users\\SoulSold\\source\\repos\\TopologySort\\TopologySort\\input.txt");
+
+	Leader *LD = nullptr;
+	Leader *pa, *pb;
+	int start, end;
+	auto edges = SplitStringsByPairs(ReadAllstrings(path)); //Возвращает массив пар точек - это и есть наши ребра
+	for (auto edge : edges)
+	{
+		//Ищем вершины a и b (Если таких нет, добавляем их)
+		for (pa = LD; pa && pa->key != edge.a; pa = pa->nx);
+		if (!pa)
+		{
+			Leader *newLD = new Leader();
+			newLD->key = edge.a;
+			newLD->count = 0;
+			newLD->nx = LD;
+			newLD->tr = nullptr;
+			LD = newLD;
+			pa = LD;
+		}
+		for (pb = LD; pb && pb->key != edge.b; pb = pb->nx);
+		if (!pb)
+		{
+			Leader *newLD = new Leader();
+			newLD->key = edge.b;
+			newLD->count = 0;
+			newLD->tr = nullptr;
+			newLD->nx = LD;
+			LD = newLD;
+			pb = LD;
+		}
+		//Добавляем предшественника b
+		pb->count++;
+		//Добавляем последователя a
+		Trailer *newEdge = new Trailer();
+		newEdge->ld = pb;
+		newEdge->nx = pa->tr;
+		pa->tr = newEdge;
+	}
+	std::cout << "Graph:\n";
+	PrintGraph(LD);
+
+	//Вырываем из графа вершины с count == 0
+	std::stack<Leader*> LDnew;
+	for (Leader* ld = LD; ld; ld = ld->nx)
+	{
+		if (ld->count == 0)
+		{
+			LDnew.push(ld);
+		}
+	}
+	Leader *sortedGraph = nullptr;
+	Leader *tail = nullptr;
+	while (!LDnew.empty())
+	{
+		
+		Leader *lead = LDnew.top();
+		LDnew.pop();
+		for (Trailer* t = lead->tr; t; t = t->nx)
+		{
+			t->ld->count--;
+			if (t->ld->count == 0)
+			{
+				LDnew.push(t->ld);
+			}
+		}
+		for (Trailer* t = lead->tr; t;)
+		{
+			Trailer* p = t;
+			t = t->nx;
+			delete p;
+		}
+		Leader *newLD = new Leader{ lead->key,0,nullptr, nullptr};
+		if (!sortedGraph)
+		{
+			sortedGraph = newLD;
+			tail = newLD;
+		}
+		else
+		{
+			tail->nx = newLD;
+			tail = newLD;
+		}
+	}
+	std::cout << "Sorted graph:\n";
+	PrintSortedGraph(sortedGraph);
+	return 0;
+}
+//4 6 2 5 3 7 1
