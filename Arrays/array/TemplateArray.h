@@ -56,7 +56,15 @@ private:
 
 
 public:
-	//void Scan(int);
+	void Scan(int count)
+	{
+		for (size_t i = 0; i < count; i++)
+		{
+			T value;
+			std::cin >> value;
+			*this += value;
+		}
+	}
 	void Print()
 	{
 		for (int i = 0; i < capacity; i++)
@@ -76,8 +84,7 @@ public:
 		}
 		return -1;
 	}
-
-	int & operator [] (int i)
+	T & operator [] (int i)
 	{
 		return arr[i];
 		//throw std::exception("Index out of TemplateArray!");
@@ -92,7 +99,7 @@ public:
 	}
 	TemplateArray operator += (const T key)
 	{
-		int *buffer = new int[capacity + 1];
+		T *buffer = new T[capacity + 1];
 		CopyElements(buffer, arr, capacity);
 		buffer[capacity] = key;
 		delete arr;
@@ -130,15 +137,16 @@ public:
 	}
 	TemplateArray operator -(T key)
 	{
+		TemplateArray result(*this);
 		for (int i = 0; i < capacity; i++)
 		{
 			if (key == arr[i])
 			{
-				Shift(i);
+				result.Shift(i);
 				break;
 			}
 		}
-		return *this;
+		return result;
 	}
 	bool operator ==(TemplateArray a)
 	{
