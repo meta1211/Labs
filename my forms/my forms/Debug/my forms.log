@@ -1,0 +1,8 @@
+﻿  mainWindow.cpp
+c:\users\soulsold\source\repos\my forms\my forms\mainwindow.h(486): warning C4244: аргумент: преобразование "wchar_t" в "const _Elem", возможна потеря данных
+          with
+          [
+              _Elem=char
+          ]
+  List.obj : обнаружен модуль MSIL; для MSIL последовательная компоновка отключена; выполняется полная компоновка
+  my forms.vcxproj -> C:\Users\SoulSold\source\repos\my forms\Debug\MyForms.exe
