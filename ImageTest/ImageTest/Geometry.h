@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 #include <iostream>
+#include <tuple>
 namespace Geometry
 {
 	class Vec3f
@@ -29,35 +30,58 @@ namespace Geometry
 				return x;
 			}
 		}
+		float& operator[] (char index)
+		{
+			switch (index)
+			{
+			case 'x':
+				return x;
+			case 'y':
+				return y;
+			case 'z':
+				return z;
+			default:
+				return x;
+			}
+		}
 		Vec3f operator*(float a)
 		{
 			return Vec3f(x * a, y * a, z * a);
 		}
-		float operator*(Vec3f b)
+		float operator*(const Vec3f &b)
 		{
 			return x * b.x + y * b.y + z * b.z;
 		}
-		Vec3f operator-(const Vec3f &b)
+		Vec3f operator-(const Vec3f &b) const
 		{
 			return Vec3f(x - b.x, y - b.y, z - b.z);
+		}
+		Vec3f operator +(const Vec3f &b)
+		{
+			return Vec3f(x + b.x, y + b.y, z + b.z);
 		}
 		Vec3f static dif(const Vec3f &a, const Vec3f &b)
 		{
 			return Vec3f(a.x - b.x, a.y - b.y, a.z - b.z);
 		}
-		float mod()
+		float static Multi(const Vec3f &a, const Vec3f &b)
+		{
+			return a.x * b.x + a.y * b.y + a.z * b.z;
+		}
+		float Mod()
 		{
 			return sqrt(*this * *this);
 		}
-		void Normalize()
+		Vec3f Normalize()
 		{
-			if (mod() > 0)
+			if (Mod() > 0)
 			{
-				float m = mod();
+				float m = Mod();
 				x /= m;
 				y /= m;
 				z /= m;
 			}
+			return *this;
 		}
 		float Distance(const Vec3f &b)
 		{
@@ -77,36 +101,90 @@ namespace Geometry
 		const Geometry::Vec3f red(255, 0, 0);
 		const Geometry::Vec3f green(0, 255, 0);
 		const Geometry::Vec3f blue(0, 0, 255);
-		const Geometry::Vec3f black(255, 255, 255);
-		const Geometry::Vec3f white(0, 0, 0);
+		const Geometry::Vec3f black(0, 0, 0);
+		const Geometry::Vec3f white(255, 255, 255);
 	};
 	namespace Figures
 	{
-		class Figure
+		struct RectangleArea
 		{
-
+			Vec3f A, B, C, D;
+			RectangleArea(const Vec3f &a, const Vec3f &b, const Vec3f &c, const Vec3f &d)
+			{
+				A = a;
+				B = b;
+				C = c;
+				D = d;
+			}
 		};
 
-		class Sphere {
+		//All figures must use this class as base class for rendering ones.
+		class Figure
+		{
+		public:
+			//Returns area using as figure borders. Slightly increaces render speed. Return zero square rectangle for using pictures size as border. 
+			virtual RectangleArea GetBorders() = 0;
+			//Sets a rule for drawing figure, usually as math formula.
+			virtual bool IsInFigure(const Vec3f &coordinates) = 0;
+			virtual std::string GetName() = 0;
+		};
+
+		struct Ray
+		{
+			Vec3f start;
+			Vec3f direction;
+			Ray(Vec3f Start = (0, 0, 0), Vec3f Direction = (0, 0, 0)) : start(Start), direction(Direction) {};
+		};
+
+		class Sphere: public Figure {
 		public:
 			Vec3f center;
 			float radius;
 		
 			Sphere(Vec3f c, float r) : center(c), radius(r) {};
-
-			bool ray_intersect(Vec3f orig, const Vec3f &dir, float &t0) const
+			
+			RectangleArea GetBorders()
 			{
-				Vec3f L = Vec3f::dif(center, orig);
-				float tca = L * dir;
-				float d2 = L * L - tca * tca;
-				if (d2 > radius*radius) return false;
-				float thc = sqrtf(radius*radius - d2);
-				t0 = tca - thc;
-				float t1 = tca + thc;
-				if (t0 < 0) t0 = t1;
-				if (t0 < 0) return false;
-				return true;
+				return RectangleArea(
+					Vec3f(center['x'] - radius, center['y'] + radius),
+					Vec3f(center['x'] + radius, center['y'] + radius),
+					Vec3f(center['x'] + radius, center['y'] - radius),
+					Vec3f(center['x'] - radius, center['y'] - radius));
 			}
+
+			bool IsInFigure(const Vec3f &coordinates)
+			{
+				return 
+					center.Distance(coordinates) <= radius;
+			}
+
+			//calculating this as square eq
+			std::pair<bool, float> ray_intersect(Ray ray)
+			{
+				Vec3f newStart = ray.start - center;
+				float b = 2 * (newStart * ray.direction);
+				float c = newStart * newStart - radius * radius;
+				float disc = b * b - 4 * c;
+				if (disc < 0)
+				{
+					return std::pair<bool, float>(false, -1.0);
+				}
+				else
+				{
+					disc = sqrt(disc);
+					float x1 = (-b + disc) / 2;
+					float x2 = (-b - disc) / 2;
+					return std::pair<bool, float>(true, x1 > x2 ? x1 : x2);
+				}
+			}
+		};
+		class line
+		{
+		public:
+			Vec3f start;
+			Vec3f dir;
+			//ax + by + c = 0
+			line(const Vec3f &Start, const Vec3f &Dir) :start(Start), dir(Dir) {};
 		};
 	};
 }

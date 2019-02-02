@@ -6,7 +6,8 @@
 #include "Geometry.h"
 #include <algorithm>
 using namespace Geometry;
-float sq(float a) { return a * a; }
+inline float sq(float a) { return a * a; }
+
 void render() 
 {
 	const int width = 1024;
@@ -33,36 +34,76 @@ void render()
 	ofs.close();
 }
 
+void MakeBackground(std::vector <std::vector<Vec3f>> &pixelArray, const Vec3f &color)
+{
+	for (auto line : pixelArray)
+	{
+		for (auto pixel : line)
+		{
+			pixel = color;
+		}
+	}
+}
+
+void PrintFigure(std::vector <std::vector<Vec3f>> &pixelArray, Figures::Figure &figure, const Vec3f &color)
+{
+	Figures::RectangleArea borders = figure.GetBorders();
+	for (size_t x = borders.A['x']; x < borders.B['x']; x++)
+	{
+		for (size_t y = borders.C['y']; y < borders.A['y']; y++)
+		{
+			if (figure.IsInFigure(Vec3f(x, y, 0)))
+			{
+				pixelArray[x][y] = color;
+			}
+		}
+	}
+}
+
 void render(Figures::Sphere s, Vec3f color, Vec3f background)
 {
-	const int width = 1024;
-	const int height = 768;
+	const int width = 600;
+	const int height = 600;
+	const Figures::Sphere light(Vec3f(0, 0, 50), 1);
+
 	std::vector <std::vector<Vec3f>> framebuffer(width);
-	for (auto arr : framebuffer)
+	for (auto &arr : framebuffer)
 	{
-		arr = std::vector<Vec3f>(height);
+		arr.resize(height);
+	}
+
+	MakeBackground(framebuffer, background);
+	//PrintFigure(framebuffer, s, background);
+
+	for (size_t i = 0; i < width; i++)
+	{
+		for (size_t j = 0; j < height; j++)
+		{
+			Figures::Ray ray(Vec3f(i, j), Vec3f(0, 0, 1));
+			auto intersectionPlace = s.ray_intersect(Figures::Ray(Vec3f(j, i), Vec3f(0, 0, 1)));
+			if(intersectionPlace.first)
+			{
+				Vec3f intersection = ray.start + ray.direction * intersectionPlace.second;
+				Vec3f lightSource = light.center - intersection;
+
+				framebuffer[j][i] = color;
+			}
+		}
 	}
 	std::ofstream ofs; // save the framebuffer to file
 	ofs.open("./out.ppm");
 	ofs << "P3\n" << width << " " << height << "\n255\n";
-	for (size_t j = height; j > 0; j--)
+	for (auto line : framebuffer)
 	{
-		for (size_t i = 0; i < width; i++)
+		for (auto pixel : line)
 		{
-			if (s.center.Distance(Vec3f(i, j, 0)) <= s.radius)
-			{
-				ofs << color;
-			}
-			else
-			{
-				ofs << background;
-			}
+			ofs << pixel;
 		}
 	}
 	ofs.close();
 }
 
 int main() {
-	render(Figures::Sphere(Vec3f(100,100,0), 50), Geometry::colors::white, Geometry::colors::black);
+	render(Figures::Sphere(Vec3f(100,100,0), 100), Geometry::colors::white, Geometry::colors::black);
 	return 0;
 }
